@@ -1,19 +1,37 @@
 var highchartCDN = 'http://code.highcharts.com/highcharts.js';
+var drawAreaId = 'drawArea';/*描画エリアのID*/
+var graphId = 'drawGraph';/*highchart描画のID*/
 var comPort = $('.slick-viewport');/*コメントエリア*/
-if (comPort.length < 0) {
-    alert('コメントエリアの取得失敗');
-}
 var videoLength = $("li.playlistItem.playing a div.thumbContainer p.videoLength").text();
-if(videoLength === 0){
-    alert('動画時間の取得失敗');
-}
+
+var comArray = [];/*コメント情報を格納する*/
+var idArray = [];/*idのリスト*/
+var beforeTop = -1;/*直前に読み込ん高さ*/
+var m;/*コメントタグ*/
+var myTim = null;
+
 /* 関数群 */
+/*ライブラリ取得*/
+function getLib(){
+    if(!$('body').highcharts){
+        var script = document.createElement('script');
+        script.src = highchartCDN;
+        script.onload = function() {
+            $(document).trigger('NICOGRAPH_LIB_COMPLETE');
+        }
+        document.body.appendChild(script);
+    }else{
+        $(document).trigger('NICOGRAPH_LIB_COMPLETE')
+    }
+}
+
 /*「＜分＞:＜秒＞」をインデックスへ変更*/
 function time2idx(time,division){
     var timeArray = time.split(':');
     var time = parseInt((timeArray[0] * 60 )) + parseInt(timeArray[1]);
     return time == 0 ? 0 : Math.floor(time / division);
 }
+
 /*インデックスから「＜分＞:＜秒＞」へ変更*/
 function idx2time(idx,division){
     var time = idx * division;
@@ -21,25 +39,18 @@ function idx2time(idx,division){
     return Math.floor(time / 60) + ':' + sec;
 }
 /*コメントエリア内の情報を取得*/
-/*すべて取得*/
-var comArray = [];/*コメント情報を格納する*/
-var idArray = [];/*idのリスト*/
-var beforeTop = -1;/*直前に読み込ん高さ*/
-var m;/*コメントタグ*/
-var myTim = null;
-
-comPort.scrollTop(0);
 /*表示されているコメント欄をスクロールしながら取得*/
 /*読み込み完了時に「NICO_COM_COMPLETE」イベント発火*/
 function getMessages() {
     /*コメントエリア取得タイマー*/
     if(myTim === null){
-        myTim = setInterval('getMessages()',200);
+        comPort.scrollTop(0);
+        myTim = setInterval('getMessages()',100);
     }
     if (comPort.scrollTop() === beforeTop) {
         clearInterval(myTim);
         myTim = null;
-        console.log('コメント欄取得完了')
+        console.log('コメント欄取得完了');
         $(document).trigger('NICO_COM_COMPLETE');
     }
     m = $('.ui-widget-content.slick-row');
@@ -63,16 +74,33 @@ function getMessages() {
     beforeTop = comPort.scrollTop();
     comPort.scrollTop(beforeTop+300);
 }
-getMessages();
+/*描画エリア作成*/
+function createDrawArea(){
+    if($('#'+drawAreaId).length < 1){
+        var drawAreaDiv = $('<div>',{'id': drawAreaId})
+                              .css({
+                                  'bottom'           : '0px',
+                                  'position'         : 'fixed',
+                                  'z-index'          : '1',
+                                  'width'            : '100%',
+                                  'height'           : '200px',
+                                  'background-color' : '#fff'
+                              });
+        drawAreaDiv.append(
+            $('<button>')
+                .text('閉じる')
+                .click(function(){
+                    $('#'+drawAreaId).remove();
+                })
+        );
+        drawAreaDiv.append(
+            $('<div>',{'id': graphId})
+        );
+        $('body').append(drawAreaDiv);
+        console.log('描画エリアの作成完了')
+    }
 
-$(document).off('NICO_COM_COMPLETE');
-$(document).on('NICO_COM_COMPLETE',function(){
-    /*カテゴリー作成*/
-    console.log(comArray);
-    console.log('length:'+comArray.length);
-    $('body').append('<script>',{script : highchartCDN});/*highchartライブラリ取得*/
-    drawData(5);
-})
+}
 function drawData(division){
     var maxIdx = time2idx(videoLength,division);
     var categories = [];
@@ -87,6 +115,49 @@ function drawData(division){
     for(var i=0; i < comArray.length ; i++){
         seriesData[time2idx(comArray[i].time,division)]++;
     }
-    console.log(categories);
-    console.log(seriesData);
+    $('#'+graphId).highcharts({
+        chart: {
+            height : 200,
+            type   : 'line'
+        },
+        title : {
+            text : 'コメント推移'
+        },
+        xAxis: {
+            categories: categories
+        },
+        series: [
+            {
+                name : 'コメント量',
+                data : seriesData
+            }
+        ]
+    });
 }
+/*ライブラリ取得*/
+$(document).off('NICOGRAPH_LIB_COMPLETE');
+$(document).on('NICOGRAPH_LIB_COMPLETE',function(){
+    console.log('ライブラリ取得完了');
+    if (comPort.length < 0) {
+        alert('コメントエリアの取得失敗');
+        return ;
+    }
+    if(videoLength === 0){
+        alert('動画時間の取得失敗');
+        return ;
+    }
+    /*コメンエリア取得*/
+    getMessages();
+});
+/*コメント全取得完了*/
+$(document).off('NICO_COM_COMPLETE');
+$(document).on('NICO_COM_COMPLETE',function(){
+    /*カテゴリー作成*/
+    console.log(comArray);
+    console.log('length:'+comArray.length);
+    createDrawArea();
+    drawData(5);
+})
+
+/*最初の処理実行*/
+getLib();
