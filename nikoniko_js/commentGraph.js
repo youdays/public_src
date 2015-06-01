@@ -110,13 +110,11 @@ function drawData(division){
         categories.push(idx2time(i,division));
         seriesData[i] = 0;
     }
-    console.log(categories);
-    console.log(seriesData.length)
     /*出現回数計算*/
     for(var i=0; i < comArray.length ; i++){
         seriesData[time2idx(comArray[i].time,division)]++;
     }
-    seriesData.pop();
+    seriesData.pop();//末尾のゴミ削除（原因不明）
     $('#'+graphId).highcharts({
         chart: {
             height : 200,
@@ -155,8 +153,6 @@ $(document).on('NICOGRAPH_LIB_COMPLETE',function(){
 $(document).off('NICO_COM_COMPLETE');
 $(document).on('NICO_COM_COMPLETE',function(){
     /*カテゴリー作成*/
-    console.log(comArray);
-    console.log('length:'+comArray.length);
     createDrawArea();
     drawData(5);
 })
