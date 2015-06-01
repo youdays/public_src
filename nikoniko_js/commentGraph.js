@@ -106,10 +106,11 @@ function drawData(division){
     var categories = [];
     var seriesData = [];
     /*カテゴリーと0フィルデータ作成*/
-    for (var i=0 ; i < maxIdx; i++) {
+    for (var i=0 ; i <= maxIdx; i++) {
         categories.push(idx2time(i,division));
         seriesData[i] = 0;
     }
+    console.log(categories);
     console.log(seriesData.length)
     /*出現回数計算*/
     for(var i=0; i < comArray.length ; i++){
