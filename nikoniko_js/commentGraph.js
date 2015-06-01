@@ -106,7 +106,7 @@ function drawData(division){
     var categories = [];
     var seriesData = [];
     /*カテゴリーと0フィルデータ作成*/
-    for (var i=0 ; i <= maxIdx; i++) {
+    for (var i=0 ; i < maxIdx; i++) {
         categories.push(idx2time(i,division));
         seriesData[i] = 0;
     }
