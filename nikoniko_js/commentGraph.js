@@ -116,6 +116,7 @@ function drawData(division){
     for(var i=0; i < comArray.length ; i++){
         seriesData[time2idx(comArray[i].time,division)]++;
     }
+    seriesData.pop();
     $('#'+graphId).highcharts({
         chart: {
             height : 200,
